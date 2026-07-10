@@ -1,0 +1,30 @@
+enum UserStatus {
+    ACTIVE
+    SUSPENDED
+}
+
+enum Role {
+    CUSTOMER
+    PROVIDER
+    ADMIN
+}
+
+enum PaymentStatus {
+    PENDING
+    COMPLETED
+    FAILED
+}
+
+enum RentalStatus {
+    PLACED
+    CONFIRMED
+    PAID
+    PICKED_UP
+    RETURNED
+    CANCELLED
+}
+
+enum PaymentProvider {
+    STRIPE
+    SSLCOMMERZ
+}
