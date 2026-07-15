@@ -6,7 +6,7 @@ import { jwtUtils } from "../../utils/jwt";
 import { SignOptions } from "jsonwebtoken";
 
 const registerUserIntoDB = async (payload: RegisterUserPayload) => {
-    const { name, email, password, phone, address, profileImage } = payload;
+    const { name, email, password, phone, address, profileImage, role } = payload;
 
     const isUserExist = await prisma.user.findUnique({
         where: { email }
@@ -25,7 +25,8 @@ const registerUserIntoDB = async (payload: RegisterUserPayload) => {
             password: hashPassword,
             phone,
             address,
-            profileImage
+            profileImage,
+            role
         }
     });
 
@@ -46,11 +47,17 @@ const loginUser = async (payload: ILoginUser) => {
     const { email, password } = payload;
 
 
-    const user = await prisma.user.findUniqueOrThrow({
+    const user = await prisma.user.findUnique({
         where: {
             email
         }
     });
+
+    if (!user) {
+        throw new Error("The email is incorrect or not found");
+    }
+
+
 
     if (user.status === "SUSPENDED") {
         throw new Error("Your account has been suspended. Please contact support.");
@@ -81,22 +88,10 @@ const loginUser = async (payload: ILoginUser) => {
     };
 };
 
-const getMyProfileFromDB = async (userId: string) => {
-    const user = await prisma.user.findUniqueOrThrow({
-        where: {
-            id: userId
-        },
-        omit: {
-            password: true
-        }
-    });
 
-    return user;
-};
 
 export const authService = {
     registerUserIntoDB,
-    loginUser,
-    getMyProfileFromDB
+    loginUser
 
 };

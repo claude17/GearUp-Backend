@@ -28,7 +28,7 @@ const login = catchAsync(async (req: Request, res: Response) => {
 
     res.cookie("accessToken", accessToken, {
         httpOnly: true,
-        secure: false,
+        secure: true,
         sameSite: "none",
         maxAge: 1000 * 60 * 60 * 24 //24 hours or 1 day
     });
@@ -43,23 +43,8 @@ const login = catchAsync(async (req: Request, res: Response) => {
 
 });
 
-const getMyProfile = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const userId = req.user?.id as string;
-
-    const profile = await authService.getMyProfileFromDB(userId);
-
-    sendResponse(res, {
-        success: true,
-        statusCode: httpStatus.OK,
-        message: "User profile fetched successfully",
-        data: {
-            profile
-        }
-    });
-});
 
 export const authController = {
     register,
-    login,
-    getMyProfile,
+    login
 };
