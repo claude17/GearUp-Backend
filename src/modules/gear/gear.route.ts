@@ -11,7 +11,7 @@ const router = Router();
 
 router.get("/", gearController.getAllGear);
 
-router.post("/mygear", auth(Role.PROVIDER), gearController.getMyGear);
+router.get("/mygear", auth(Role.PROVIDER), gearController.getMyGear);
 
 router.get("/:id", gearController.getSingleGear);
 
