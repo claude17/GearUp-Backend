@@ -6,7 +6,7 @@ model User {
     phone        String?
     address      String?
     profileImage String?
-    role         Role
+    role         Role       @default(CUSTOMER)
     status       UserStatus @default(ACTIVE)
 
     gearItems      GearItem[]

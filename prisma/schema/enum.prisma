@@ -28,3 +28,7 @@ enum PaymentProvider {
     STRIPE
     SSLCOMMERZ
 }
+
+enum PaymentMethod {
+    CARD
+}
