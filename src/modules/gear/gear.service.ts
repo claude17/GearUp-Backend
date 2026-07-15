@@ -67,7 +67,7 @@ const getAllGearFromDB = async () => {
 };
 
 const getSingleGearFromDB = async (gearId: string) => {
-    const result = await prisma.gearItem.findUnique({
+    const result = await prisma.gearItem.findUniqueOrThrow({
         where: {
             id: gearId
         },
@@ -94,8 +94,7 @@ const getSingleGearFromDB = async (gearId: string) => {
     return result;
 };
 
-const updateGearIntoDB = async (gearId: string,
-    providerId: string, payload: IUpdateGearPayload) => {
+const updateGearIntoDB = async (gearId: string, providerId: string, payload: IUpdateGearPayload) => {
 
     const gear = await prisma.gearItem.findFirstOrThrow({
         where: {
@@ -154,26 +153,32 @@ const deleteGearFromDB = async (gearId: string, providerId: string) => {
     });
 };
 
-// const getAdminGearFromDB = async () => {
-//     const result = await prisma.gearItem.findMany({
-//         include: {
-//             category: true,
-//             provider: {
-//                 select: {
-//                     id: true,
-//                     name: true,
-//                     email: true,
-//                     status: true
-//                 }
-//             }
-//         },
-//         orderBy: {
-//             createdAt: "desc"
-//         }
-//     });
-
-//     return result;
-// };
+const getMyGearFromDB = async (providerId: string) => {
+    const result = await prisma.gearItem.findMany({
+        where: {
+            providerId
+        },
+        include: {
+            category: {
+                select: {
+                    id: true,
+                    name: true,
+                    description: true
+                }
+            },
+            provider: {
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    role: true
+                }
+            },
+            reviews: true
+        }
+    });
+    return result;
+};
 
 export const gearService = {
     createGearIntoDB,
@@ -181,5 +186,5 @@ export const gearService = {
     getSingleGearFromDB,
     updateGearIntoDB,
     deleteGearFromDB,
-    // getAdminGearFromDB
+    getMyGearFromDB
 };

@@ -55,7 +55,7 @@ const getSingleGear = catchAsync(async (req: Request, res: Response, next: NextF
     });
 });
 
-const updateGear = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+const updateMyGear = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
 
     const gearId = req.params.id as string;
 
@@ -77,7 +77,7 @@ const updateGear = catchAsync(async (req: Request, res: Response, next: NextFunc
     });
 });
 
-const deleteGear = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+const deleteMyGear = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const gearId = req.params.id as string;
     const providerId = req.user?.id as string;
 
@@ -85,9 +85,7 @@ const deleteGear = catchAsync(async (req: Request, res: Response, next: NextFunc
         throw new Error("GearId is required in params");
     }
 
-    await gearService.deleteGearFromDB(gearId,
-        providerId
-    );
+    await gearService.deleteGearFromDB(gearId, providerId);
 
     sendResponse(res, {
         success: true,
@@ -97,24 +95,25 @@ const deleteGear = catchAsync(async (req: Request, res: Response, next: NextFunc
     });
 });
 
-// const getAdminGear = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-//     const gear = await gearService.getAdminGearFromDB();
+const getMyGear = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const providerId = req.user?.id as string;
+    const gear = await gearService.getMyGearFromDB(providerId);
 
-//     sendResponse(res, {
-//         success: true,
-//         statusCode: httpStatus.OK,
-//         message: "All gear fetched successfully",
-//         data: {
-//             gear
-//         }
-//     });
-// });
+    sendResponse(res, {
+        success: true,
+        statusCode: httpStatus.OK,
+        message: "All gear fetched successfully",
+        data: {
+            gear
+        }
+    });
+});
 
 export const gearController = {
     createGear,
     getAllGear,
     getSingleGear,
-    updateGear,
-    deleteGear,
-    // getAdminGear
+    updateMyGear,
+    deleteMyGear,
+    getMyGear
 };

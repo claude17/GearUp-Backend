@@ -8,19 +8,17 @@ import { Role } from "../../../generated/prisma/enums";
 
 const router = Router();
 
-// Public Routes
+
 router.get("/", gearController.getAllGear);
+
+router.post("/mygear", auth(Role.PROVIDER), gearController.getMyGear);
 
 router.get("/:id", gearController.getSingleGear);
 
-// Provider Routes
-router.post("/provider", auth(Role.PROVIDER), gearController.createGear);
+router.post("/", auth(Role.PROVIDER), gearController.createGear);
 
-router.patch("/provider/:id", auth(Role.PROVIDER), gearController.updateGear);
+router.patch("/:id", auth(Role.PROVIDER), gearController.updateMyGear);
 
-router.delete("/provider/:id", auth(Role.PROVIDER), gearController.deleteGear);
-
-// Admin Routes
-// router.get("/admin", auth(Role.ADMIN), gearController.getAdminGear);
+router.delete("/:id", auth(Role.PROVIDER), gearController.deleteMyGear);
 
 export const gearRoutes = router;
