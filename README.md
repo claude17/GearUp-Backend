@@ -36,7 +36,7 @@ GearUp is built with Express, TypeScript, Prisma, PostgreSQL, and Stripe. The AP
 ### Public
 
 - Browse all gear listings
-- Search gear by category, brand, availability, and other filters
+- Search and filter gear by category, brand, and price range
 - View gear details and reviews
 - View available categories
 
@@ -157,12 +157,29 @@ The production API is available at:
 
 | Method | Endpoint | Access | Description |
 | --- | --- | --- | --- |
-| GET | `/api/gears` | Public | Get all gear listings |
+| GET | `/api/gears` | Public | Get all gear listings with optional filters (`category`, `brand`, `minPrice`, `maxPrice`) |
 | GET | `/api/gears/:id` | Public | Get details for a single gear item |
 | GET | `/api/gears/mygear` | Provider | Get gear items owned by the authenticated provider |
 | POST | `/api/gears` | Provider | Create a new gear listing |
 | PATCH | `/api/gears/:id` | Provider | Update one of the provider's gear listings |
 | DELETE | `/api/gears/:id` | Provider | Delete one of the provider's gear listings |
+
+#### Gear Filter Query Parameters
+
+`GET /api/gears` supports the following optional query parameters:
+
+| Query Param | Type | Description |
+| --- | --- | --- |
+| `category` | string | Filter by category name (case-insensitive exact match) |
+| `brand` | string | Filter by brand (case-insensitive partial match) |
+| `minPrice` | number | Minimum daily rental price |
+| `maxPrice` | number | Maximum daily rental price |
+
+Example:
+
+```http
+GET /api/gears?category=Cycling&brand=Trek&minPrice=10&maxPrice=100
+```
 
 ### Rentals
 
