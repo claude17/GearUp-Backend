@@ -1,3 +1,5 @@
+import { GearItemWhereInput } from "../../../generated/prisma/models";
+
 export interface ICreateGearPayload {
     name: string;
     brand: string;
@@ -12,3 +14,10 @@ export interface ICreateGearPayload {
 }
 
 export interface IUpdateGearPayload extends Partial<ICreateGearPayload> { }
+
+export interface IGearQuery {
+    category?: string;
+    brand?: string;
+    minPrice?: string;
+    maxPrice?: string;
+}

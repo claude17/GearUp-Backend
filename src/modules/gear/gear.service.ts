@@ -1,5 +1,7 @@
+
+import { FloatFilter, GearItemWhereInput } from "../../../generated/prisma/models";
 import { prisma } from "../../lib/prisma";
-import { ICreateGearPayload, IUpdateGearPayload } from "./gear.interface";
+import { ICreateGearPayload, IGearQuery, IUpdateGearPayload } from "./gear.interface";
 
 const createGearIntoDB = async (providerId: string,
     payload: ICreateGearPayload
@@ -38,8 +40,53 @@ const createGearIntoDB = async (providerId: string,
     return result;
 };
 
-const getAllGearFromDB = async () => {
+const getAllGearFromDB = async (query: IGearQuery) => {
+    const andConditions: GearItemWhereInput[] = [];
+
+    if (query.category) {
+        andConditions.push({
+            category: {
+                name: {
+                    equals: query.category,
+                    mode: "insensitive"
+                }
+            }
+        });
+    }
+
+
+    if (query.brand) {
+        andConditions.push({
+            brand: {
+                contains: query.brand,
+                mode: "insensitive"
+            }
+        });
+    }
+
+
+    if (query.minPrice || query.maxPrice) {
+
+        const priceFilter: FloatFilter = {};
+
+        if (query.minPrice) {
+            priceFilter.gte = Number(query.minPrice);
+        }
+
+        if (query.maxPrice) {
+            priceFilter.lte = Number(query.maxPrice);
+        }
+
+        andConditions.push({
+            dailyRentalPrice: priceFilter
+        });
+    }
+
     const result = await prisma.gearItem.findMany({
+        where: {
+            AND: andConditions
+        },
+
         include: {
             category: {
                 select: {
@@ -58,6 +105,7 @@ const getAllGearFromDB = async () => {
             },
             reviews: true
         },
+
         orderBy: {
             createdAt: "desc"
         }
