@@ -1,3 +1,4 @@
+import { RentalStatus, Role } from "../../../generated/prisma/enums";
 import { prisma } from "../../lib/prisma";
 import { ICreateRentalPayload, IUpdateRentalStatusPayload } from "./rental.interface";
 
@@ -40,14 +41,18 @@ const createRentalIntoDB = async (customerId: string, payload: ICreateRentalPayl
                 totalAmount
             },
             include: {
-                customer: true,
-                provider: true,
-                gearItem: true
+                gearItem: {
+                    select: {
+                        id: true,
+                        name: true,
+                        image: true,
+                        dailyRentalPrice: true,
+                    },
+                },
             }
         });
 
-        const updatedAvailableStock =
-            gear.availableStock - payload.quantity;
+        const updatedAvailableStock = gear.availableStock - payload.quantity;
 
         await tx.gearItem.update({
             where: {
@@ -70,9 +75,32 @@ const getMyRentalsFromDB = async (customerId: string) => {
             customerId
         },
         include: {
-            gearItem: true,
-            payment: true,
-            review: true
+            gearItem: {
+                select: {
+                    id: true,
+                    name: true,
+                    brand: true,
+                    image: true,
+                    dailyRentalPrice: true,
+                },
+            },
+            payment: {
+                select: {
+                    id: true,
+                    amount: true,
+                    status: true,
+                    provider: true,
+                    paidAt: true,
+                },
+            },
+            review: {
+                select: {
+                    id: true,
+                    rating: true,
+                    comment: true,
+                    createdAt: true,
+                },
+            },
         },
         orderBy: {
             createdAt: "desc"
@@ -89,12 +117,49 @@ const getSingleRentalFromDB = async (rentalId: string) => {
             id: rentalId
         },
         include: {
-            customer: true,
-            provider: true,
-            gearItem: true,
-            payment: true,
-            review: true
-        }
+            customer: {
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                },
+            },
+            provider: {
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                },
+            },
+            gearItem: {
+                select: {
+                    id: true,
+                    name: true,
+                    brand: true,
+                    image: true,
+                    specifications: true,
+                    dailyRentalPrice: true,
+                },
+            },
+            payment: {
+                select: {
+                    id: true,
+                    amount: true,
+                    status: true,
+                    provider: true,
+                    transactionId: true,
+                    paidAt: true,
+                },
+            },
+            review: {
+                select: {
+                    id: true,
+                    rating: true,
+                    comment: true,
+                    createdAt: true,
+                },
+            },
+        },
     });
 
     return result;
@@ -107,9 +172,31 @@ const getProviderOrdersFromDB = async (providerId: string) => {
             providerId
         },
         include: {
-            customer: true,
-            gearItem: true,
-            payment: true
+            customer: {
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                },
+            },
+            gearItem: {
+                select: {
+                    id: true,
+                    name: true,
+                    brand: true,
+                    image: true,
+                    dailyRentalPrice: true,
+                },
+            },
+            payment: {
+                select: {
+                    id: true,
+                    amount: true,
+                    status: true,
+                    provider: true,
+                    paidAt: true,
+                },
+            },
         },
         orderBy: {
             createdAt: "desc"
@@ -119,7 +206,7 @@ const getProviderOrdersFromDB = async (providerId: string) => {
     return result;
 };
 
-const updateRentalStatusIntoDB = async (rentalId: string, providerId: string, payload: IUpdateRentalStatusPayload) => {
+const updateRentalStatusIntoDB = async (rentalId: string, userId: string, role: Role, payload: IUpdateRentalStatusPayload) => {
 
     const rental = await prisma.rentalOrder.findUniqueOrThrow({
         where: {
@@ -127,8 +214,65 @@ const updateRentalStatusIntoDB = async (rentalId: string, providerId: string, pa
         }
     });
 
-    if (rental.providerId !== providerId) {
-        throw new Error("You are not authorized to update this rental.");
+    if (role === Role.CUSTOMER) {
+
+        if (rental.customerId !== userId) {
+            throw new Error("You are not authorized to update this rental.");
+        }
+
+        if (rental.status !== RentalStatus.PLACED) {
+            throw new Error("Only placed rentals can be cancelled.");
+        }
+
+        if (payload.status !== RentalStatus.CANCELLED) {
+            throw new Error("Customers can only cancel rentals.");
+        }
+    }
+
+    if (role === Role.PROVIDER) {
+
+        if (rental.providerId !== userId) {
+            throw new Error("You are not authorized to update this rental.");
+        }
+
+        switch (rental.status) {
+
+            case RentalStatus.PLACED:
+                if (payload.status !== RentalStatus.CONFIRMED) {
+                    throw new Error("A placed rental can only be confirmed.");
+                }
+                break;
+
+            case RentalStatus.CONFIRMED:
+                throw new Error(
+                    "This rental must be paid before it can be picked up."
+                );
+
+            case RentalStatus.PAID:
+                if (payload.status !== RentalStatus.PICKED_UP) {
+                    throw new Error(
+                        "A paid rental can only be marked as picked up."
+                    );
+                }
+                break;
+
+            case RentalStatus.PICKED_UP:
+                if (payload.status !== RentalStatus.RETURNED) {
+                    throw new Error(
+                        "A picked up rental can only be marked as returned."
+                    );
+                }
+                break;
+
+            case RentalStatus.RETURNED:
+                throw new Error("Rental has already been returned.");
+
+            case RentalStatus.CANCELLED:
+                throw new Error("Rental has already been cancelled.");
+
+            default:
+                throw new Error("Invalid rental status.");
+        }
     }
 
     const result = await prisma.$transaction(async (tx) => {
@@ -140,17 +284,41 @@ const updateRentalStatusIntoDB = async (rentalId: string, providerId: string, pa
                 status: payload.status
             },
             include: {
-                customer: true,
-                provider: true,
-                gearItem: true,
-                payment: true
+                customer: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true
+                    }
+                },
+                provider: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true
+                    }
+                },
+                gearItem: {
+                    select: {
+                        id: true,
+                        name: true,
+                        brand: true,
+                        image: true
+                    }
+                },
+                payment: {
+                    select: {
+                        id: true,
+                        amount: true,
+                        status: true,
+                        provider: true,
+                        paidAt: true
+                    }
+                }
             }
         });
 
-        if (
-            payload.status === "RETURNED" &&
-            rental.status !== "RETURNED"
-        ) {
+        if (payload.status === RentalStatus.CANCELLED || payload.status === RentalStatus.RETURNED) {
 
             const gear = await tx.gearItem.findUniqueOrThrow({
                 where: {
@@ -180,11 +348,57 @@ const getAllRentalsFromDB = async () => {
 
     const result = await prisma.rentalOrder.findMany({
         include: {
-            customer: true,
-            provider: true,
-            gearItem: true,
-            payment: true,
-            review: true
+            customer: {
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    role: true,
+                    status: true
+                }
+            },
+            provider: {
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    role: true,
+                    status: true
+                }
+            },
+            gearItem: {
+                select: {
+                    id: true,
+                    name: true,
+                    brand: true,
+                    image: true,
+                    category: {
+                        select: {
+                            id: true,
+                            name: true,
+                            description: true
+                        }
+                    }
+                }
+            },
+            payment: {
+                select: {
+                    id: true,
+                    amount: true,
+                    status: true,
+                    provider: true,
+                    transactionId: true,
+                    paidAt: true
+                }
+            },
+            review: {
+                select: {
+                    id: true,
+                    rating: true,
+                    comment: true,
+                    createdAt: true
+                }
+            }
         },
         orderBy: {
             createdAt: "desc"

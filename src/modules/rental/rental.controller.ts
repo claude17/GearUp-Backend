@@ -73,11 +73,12 @@ const getProviderOrders = catchAsync(async (req: Request, res: Response, next: N
 
 const updateRentalStatus = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
 
-    const providerId = req.user?.id as string;
+    const userId = req.user?.id as string;
+    const role = req.user!.role;
     const rentalId = req.params.id as string;
     const payload = req.body;
 
-    const rental = await rentalService.updateRentalStatusIntoDB(rentalId, providerId, payload);
+    const rental = await rentalService.updateRentalStatusIntoDB(rentalId, userId, role, payload);
 
     sendResponse(res, {
         success: true,
