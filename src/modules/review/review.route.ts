@@ -7,7 +7,9 @@ const router = Router();
 
 
 router.get("/", reviewController.getAllReviews);
+
 router.get("/gear/:gearItemId", reviewController.getReviewsByGear);
+
 router.get("/:id", reviewController.getSingleReview);
 
 router.post("/", auth(Role.CUSTOMER), reviewController.createReview);

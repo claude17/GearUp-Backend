@@ -117,9 +117,7 @@ const getReviewsByGearFromDB = async (gearItemId: string) => {
 
 };
 
-const getSingleReviewFromDB = async (
-    reviewId: string
-) => {
+const getSingleReviewFromDB = async (reviewId: string) => {
 
     const result = await prisma.review.findUniqueOrThrow({
         where: {
