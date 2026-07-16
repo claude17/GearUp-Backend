@@ -27,12 +27,12 @@ const createCheckoutSessionIntoDB = async (customerId: string, payload: ICreateP
         throw new Error("This rental has been cancelled.");
     }
 
-    if (rental.status !== RentalStatus.CONFIRMED) {
-        throw new Error("Only confirmed rentals can be paid.");
-    }
-
     if (rental.payment) {
         throw new Error("This rental has already been paid.");
+    }
+
+    if (rental.status !== RentalStatus.CONFIRMED) {
+        throw new Error("Only confirmed rentals can be paid.");
     }
 
     const totalDays = Math.ceil((rental.endDate.getTime() - rental.startDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -55,9 +55,7 @@ const createCheckoutSessionIntoDB = async (customerId: string, payload: ICreateP
 
                     product_data: {
                         name: rental.gearItem.name,
-                        description: rental.gearItem.description,
-                        unit_label: `${totalDays}-day rental`,
-
+                        description: `${totalDays} day rental @ $${rental.gearItem.dailyRentalPrice}/day. Qty: ${rental.quantity}`
                     }
                 }
 
@@ -82,7 +80,7 @@ const createCheckoutSessionIntoDB = async (customerId: string, payload: ICreateP
 
 
 const getMyPaymentsFromDB = async (customerId: string) => {
-    
+
     const payments = await prisma.payment.findMany({
         where: {
             rentalOrder: {
@@ -91,8 +89,21 @@ const getMyPaymentsFromDB = async (customerId: string) => {
         },
         include: {
             rentalOrder: {
-                include: {
-                    gearItem: true
+                select: {
+                    id: true,
+                    startDate: true,
+                    endDate: true,
+                    quantity: true,
+                    totalAmount: true,
+                    status: true,
+                    gearItem: {
+                        select: {
+                            id: true,
+                            name: true,
+                            brand: true,
+                            image: true
+                        }
+                    }
                 }
             }
         },
@@ -104,27 +115,37 @@ const getMyPaymentsFromDB = async (customerId: string) => {
     return payments;
 };
 
-const getSinglePaymentFromDB = async (
-    paymentId: string,
-    customerId: string
-) => {
+const getSinglePaymentFromDB = async (paymentId: string, customerId: string) => {
 
     const payment = await prisma.payment.findUniqueOrThrow({
         where: {
-            id: paymentId
+            id: paymentId,
+            rentalOrder: {
+                customerId
+            }
         },
         include: {
             rentalOrder: {
-                include: {
-                    gearItem: true
+                select: {
+                    id: true,
+                    startDate: true,
+                    endDate: true,
+                    quantity: true,
+                    totalAmount: true,
+                    status: true,
+                    gearItem: {
+                        select: {
+                            id: true,
+                            name: true,
+                            brand: true,
+                            image: true,
+                            dailyRentalPrice: true
+                        }
+                    }
                 }
             }
         }
     });
-
-    if (payment.rentalOrder.customerId !== customerId) {
-        throw new Error("You are not authorized to view this payment.");
-    }
 
     return payment;
 };
